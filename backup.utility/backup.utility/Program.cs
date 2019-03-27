@@ -15,6 +15,7 @@
 using backup.core.Implementations;
 using backup.core.Interfaces;
 using backup.core.Models;
+using dotenv.net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -48,6 +49,7 @@ namespace backup.utility
             // Create service collection
             var serviceCollection = new ServiceCollection();
 
+            DotEnv.Config();
             ConfigureServices(serviceCollection);
 
             // Create service provider
