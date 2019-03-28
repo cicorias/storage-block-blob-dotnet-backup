@@ -2,7 +2,9 @@ version: '3.4'
 
 services:
   backup.utility:
-    image: ${DOCKER_REGISTRY}backuputility
+    image: ${DOCKER_REGISTRY}backuputility:1.0.0
     build:
       context: .
       dockerfile: backup.utility/backup.utility/Dockerfile
+    env_file:
+      - .env

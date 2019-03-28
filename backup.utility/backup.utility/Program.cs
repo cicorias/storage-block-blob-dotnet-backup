@@ -25,6 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 
@@ -35,10 +36,11 @@ namespace backup.utility
     /// </summary>
     class Program
     {
-        private static Timer _timer = null;
+        private static System.Timers.Timer _timer = null;
 
         private static ServiceProvider _serviceProvider;
-        
+        private static readonly AutoResetEvent _closing = new AutoResetEvent(false);
+
         /// <summary>
         /// Main
         /// </summary>
@@ -59,7 +61,7 @@ namespace backup.utility
 
             var logger = _serviceProvider.GetService<ILogger<StorageBackupWorker>>();
 
-            _timer = new Timer(int.Parse(config.GetSection("AppSettings")["TimerElapsedInMS"]));
+            _timer = new System.Timers.Timer(int.Parse(config.GetSection("AppSettings")["TimerElapsedInMS"]));
 
             _timer.Elapsed += OnTimerElapsed;
 
@@ -67,7 +69,24 @@ namespace backup.utility
 
             logger.LogInformation("Listener started!!!");
 
-            Console.ReadLine();
+            await Task.Factory.StartNew(() =>
+             {
+                 while (true)
+                 {
+                     Console.WriteLine("looping @ {0}", DateTime.Now.ToString());
+                     Thread.Sleep(10000);
+                 }
+             });
+
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(OnExit);
+            _closing.WaitOne();
+            
+        }
+
+        protected static void OnExit(object sender, ConsoleCancelEventArgs args)
+        {
+            Console.WriteLine("Exit");
+            _closing.Set();
         }
 
         /// <summary>
