@@ -37,7 +37,6 @@ namespace backup.utility
     class Program
     {
         private static System.Timers.Timer _timer = null;
-
         private static ServiceProvider _serviceProvider;
         private static readonly AutoResetEvent _closing = new AutoResetEvent(false);
 
@@ -50,25 +49,16 @@ namespace backup.utility
         {
             // Create service collection
             var serviceCollection = new ServiceCollection();
-
             DotEnv.Config();
             ConfigureServices(serviceCollection);
-
             // Create service provider
             _serviceProvider = serviceCollection.BuildServiceProvider();
-
             var config = _serviceProvider.GetService<IConfigurationRoot>();
-
             var logger = _serviceProvider.GetService<ILogger<StorageBackupWorker>>();
-
             _timer = new System.Timers.Timer(int.Parse(config.GetSection("AppSettings")["TimerElapsedInMS"]));
-
             _timer.Elapsed += OnTimerElapsed;
-
             _timer.Start();
-
             logger.LogInformation("Listener started!!!");
-
             await Task.Factory.StartNew(() =>
              {
                  while (true)
@@ -97,16 +87,12 @@ namespace backup.utility
         private async static void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
             var logger = _serviceProvider.GetService<ILogger<StorageBackupWorker>>();
-
             try
             {
                 _timer.Stop();
-
                 logger.LogDebug("Inside timer elapsed.");
-
                 //Get the storage back up provider
                 IStorageBackup storageBackup = _serviceProvider.GetService<IStorageBackup>();
-
                 // Run the storage process
                 await storageBackup.Run();
             }
@@ -117,7 +103,6 @@ namespace backup.utility
             finally
             {
                 _timer.Start();
-
                 logger.LogDebug("Timer Started Again.");
             }
         }
@@ -152,11 +137,8 @@ namespace backup.utility
 
             // Add services
             serviceCollection.AddTransient<IStorageBackup, StorageBackupWorker>();
-
             serviceCollection.AddTransient<IStorageQueueRepository, StorageQueueRepository>();
-
             serviceCollection.AddTransient<IStorageRepository, TableRepository>();
-
             serviceCollection.AddTransient<IBlobRepository, BlobRepository>();
 
         }
