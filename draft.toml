@@ -1,0 +1,10 @@
+[environments]
+  [environments.development]
+    name = "az-blob-backup"
+    namespace = "default"
+    wait = true
+    watch = false
+    watch-delay = 2
+    auto-connect = false
+    dockerfile = "./backup.utility/backup.utility/Dockerfile"
+    chart = ""

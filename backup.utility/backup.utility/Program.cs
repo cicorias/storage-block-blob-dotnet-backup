@@ -15,6 +15,7 @@
 using backup.core.Implementations;
 using backup.core.Interfaces;
 using backup.core.Models;
+using dotenv.net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 
@@ -34,10 +36,10 @@ namespace backup.utility
     /// </summary>
     class Program
     {
-        private static Timer _timer = null;
-
+        private static System.Timers.Timer _timer = null;
         private static ServiceProvider _serviceProvider;
-        
+        private static readonly AutoResetEvent _closing = new AutoResetEvent(false);
+
         /// <summary>
         /// Main
         /// </summary>
@@ -47,25 +49,34 @@ namespace backup.utility
         {
             // Create service collection
             var serviceCollection = new ServiceCollection();
-
+            DotEnv.Config();
             ConfigureServices(serviceCollection);
-
             // Create service provider
             _serviceProvider = serviceCollection.BuildServiceProvider();
-
             var config = _serviceProvider.GetService<IConfigurationRoot>();
-
             var logger = _serviceProvider.GetService<ILogger<StorageBackupWorker>>();
-
-            _timer = new Timer(int.Parse(config.GetSection("AppSettings")["TimerElapsedInMS"]));
-
+            _timer = new System.Timers.Timer(int.Parse(config.GetSection("AppSettings")["TimerElapsedInMS"]));
             _timer.Elapsed += OnTimerElapsed;
-
             _timer.Start();
-
             logger.LogInformation("Listener started!!!");
+            await Task.Factory.StartNew(() =>
+             {
+                 while (true)
+                 {
+                     Console.WriteLine("looping @ {0}", DateTime.Now.ToString());
+                     Thread.Sleep(10000);
+                 }
+             });
 
-            Console.ReadLine();
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(OnExit);
+            _closing.WaitOne();
+            
+        }
+
+        protected static void OnExit(object sender, ConsoleCancelEventArgs args)
+        {
+            Console.WriteLine("Exit");
+            _closing.Set();
         }
 
         /// <summary>
@@ -76,16 +87,12 @@ namespace backup.utility
         private async static void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
             var logger = _serviceProvider.GetService<ILogger<StorageBackupWorker>>();
-
             try
             {
                 _timer.Stop();
-
                 logger.LogDebug("Inside timer elapsed.");
-
                 //Get the storage back up provider
                 IStorageBackup storageBackup = _serviceProvider.GetService<IStorageBackup>();
-
                 // Run the storage process
                 await storageBackup.Run();
             }
@@ -96,7 +103,6 @@ namespace backup.utility
             finally
             {
                 _timer.Start();
-
                 logger.LogDebug("Timer Started Again.");
             }
         }
@@ -118,6 +124,7 @@ namespace backup.utility
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", false)
+                .AddEnvironmentVariables()
                 .Build();
 
             Log.Logger = new LoggerConfiguration()
@@ -130,11 +137,8 @@ namespace backup.utility
 
             // Add services
             serviceCollection.AddTransient<IStorageBackup, StorageBackupWorker>();
-
             serviceCollection.AddTransient<IStorageQueueRepository, StorageQueueRepository>();
-
             serviceCollection.AddTransient<IStorageRepository, TableRepository>();
-
             serviceCollection.AddTransient<IBlobRepository, BlobRepository>();
 
         }

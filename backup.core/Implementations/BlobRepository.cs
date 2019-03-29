@@ -54,77 +54,52 @@ namespace backup.core.Implementations
             DestinationBlobInfo destinationBlobInfo = null;
 
             string destinationStorageAccountConnectionString = _config.GetConnectionString("BackupBlobStorage");
-
             string sourceStorageAccountConnectionString = _config.GetConnectionString("SourceBlobStorage");
-
             bool isServerCopy =  bool.Parse(_config.GetSection("AppSettings")["IsServerCopy"]);
 
             if (eventData is BlobEvent<CreatedEventData>)
             {
                 // Retrieve the storage account from the connection string.
                 CloudStorageAccount sourceStorageAccount = CloudStorageAccount.Parse(sourceStorageAccountConnectionString);
-
                 CloudBlobClient sourceBlobClient = sourceStorageAccount.CreateCloudBlobClient();
-
                 // Retrieve the storage account from the connection string.
                 CloudStorageAccount destinationStorageAccount = CloudStorageAccount.Parse(destinationStorageAccountConnectionString);
-
                 CloudBlobClient destinationBlobClient = destinationStorageAccount.CreateCloudBlobClient();
-
                 BlobEvent<CreatedEventData> createdEventData = (BlobEvent<CreatedEventData>)eventData;
-
                 string url = createdEventData.data.url;
 
                 CloudBlockBlob sourceBlockBlob = new CloudBlockBlob(new Uri(url),sourceBlobClient);
 
                 bool sourceBlobExists = await sourceBlockBlob.ExistsAsync();
-                
                 if (sourceBlobExists)
                 {
                     long blobSize = sourceBlockBlob.Properties.Length;
-
                     EventDateDetails dateDetails = new EventDateDetails(createdEventData.eventTime);
-
                     string destinationContaninerName = dateDetails.year.ToString();
-
                     string destinationBlobName = $"wk{dateDetails.WeekNumber}/dy{(int)dateDetails.DayOfWeek}/{sourceBlockBlob.Container.Name}/{sourceBlockBlob.Name}";
-
                     CloudBlobContainer destinationContainer = destinationBlobClient.GetContainerReference(destinationContaninerName);
-
                     bool result = await destinationContainer.CreateIfNotExistsAsync();
-                    
                     CloudBlockBlob destinationBlob = destinationContainer.GetBlockBlobReference(destinationBlobName);
-
                     string copyResult = string.Empty;
 
                     if (isServerCopy)
                     {
                         string blobToken = GenerateSASBlobToken(sourceBlockBlob);
-
                         _logger.LogInformation($"About to server copy {sourceBlockBlob.Name}. Blob size {sourceBlockBlob.Properties.Length} bytes");
-
                         copyResult = await destinationBlob.StartCopyAsync(new Uri(sourceBlockBlob.Uri.AbsoluteUri + blobToken));
-
                     }
                     else
                     {
                         _logger.LogInformation($"About to sync copy {sourceBlockBlob.Name}. Blob size {sourceBlockBlob.Properties.Length} bytes");
-
                         copyResult = "SYNCCOPY";
-
                         await TransferManager.CopyAsync(sourceBlockBlob, destinationBlob, false);
                     }
                    
                     destinationBlobInfo = new DestinationBlobInfo();
-
                     destinationBlobInfo.ContainerName = destinationContainer.Name;
-
                     destinationBlobInfo.BlobName = destinationBlobName;
-
                     destinationBlobInfo.CopyReferenceId = copyResult;
-
                     destinationBlobInfo.OrgContainerName = sourceBlockBlob.Container.Name;
-
                     destinationBlobInfo.OrgBlobName = sourceBlockBlob.Name;
                     
                     return destinationBlobInfo;
@@ -149,29 +124,21 @@ namespace backup.core.Implementations
         public async Task<string> CopyBlobFromBackupToRestore(DestinationBlobInfo backupBlob)
         {
             string destinationStorageAccountConnectionString = _config.GetConnectionString("RestoreBlobStorage");
-
             string sourceStorageAccountConnectionString = _config.GetConnectionString("BackupBlobStorage");
-
             bool isServerCopy = bool.Parse(_config.GetSection("AppSettings")["IsServerCopy"]);
 
             // Retrieve the storage account from the connection string.
             CloudStorageAccount sourceStorageAccount = CloudStorageAccount.Parse(sourceStorageAccountConnectionString);
-
             CloudBlobClient sourceBlobClient = sourceStorageAccount.CreateCloudBlobClient();
-
             // Retrieve the storage account from the connection string.
             CloudStorageAccount destinationStorageAccount = CloudStorageAccount.Parse(destinationStorageAccountConnectionString);
-
             CloudBlobClient destinationBlobClient = destinationStorageAccount.CreateCloudBlobClient();
-
             CloudBlobContainer sourceContainer = sourceBlobClient.GetContainerReference(backupBlob.ContainerName);
-
             bool sourceContainerExists = await sourceContainer.ExistsAsync();
 
             if (sourceContainerExists)
             {
                 CloudBlockBlob sourceBlockBlob = sourceContainer.GetBlockBlobReference(backupBlob.BlobName);
-
                 bool sourceBlobExists = await sourceBlockBlob.ExistsAsync();
 
                 if (sourceBlobExists)

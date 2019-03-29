@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/backup.utility/backup.utility/backup.utility.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
