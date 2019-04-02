@@ -49,7 +49,7 @@ namespace backup.utility
         {
             // Create service collection
             var serviceCollection = new ServiceCollection();
-            DotEnv.Config();
+            DotEnv.Config(false);
             ConfigureServices(serviceCollection);
             // Create service provider
             _serviceProvider = serviceCollection.BuildServiceProvider();
