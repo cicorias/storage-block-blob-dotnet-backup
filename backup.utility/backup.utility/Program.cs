@@ -63,7 +63,7 @@ namespace backup.utility
              {
                  while (true)
                  {
-                     Console.WriteLine("looping @ {0}", DateTime.Now.ToString());
+                     logger.LogInformation("looping @ {0}", DateTime.Now.ToString());
                      Thread.Sleep(10000);
                  }
              });
@@ -128,9 +128,9 @@ namespace backup.utility
                 .Build();
 
             Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Warning()
             .ReadFrom.Configuration(configuration)
             .CreateLogger();
-
 
             // Add access to generic IConfigurationRoot
             serviceCollection.AddSingleton(configuration);
