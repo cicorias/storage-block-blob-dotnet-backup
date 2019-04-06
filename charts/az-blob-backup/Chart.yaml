@@ -1,4 +1,4 @@
 apiVersion: v1
-description: A Helm chart for Kubernetes
+description: Azure Storage Account backup
 name: az-blob-backup
 version: v0.1.0

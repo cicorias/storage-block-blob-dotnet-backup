@@ -4,11 +4,14 @@
 replicaCount: 1
 image:
   pullPolicy: IfNotPresent
+  repository: cicorias/backuputility
+  tag: latest
 service:
-  name: dotnetcore
+  name: az-backup
   type: ClusterIP
-  externalPort: 8080
-  internalPort: 80
+  
+  # externalPort: 8080
+  # internalPort: 80
 resources:
   limits:
     cpu: 1
